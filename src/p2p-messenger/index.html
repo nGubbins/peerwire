@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>P2P Messenger</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0ef;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+#app{display:flex;flex-direction:column;height:620px;width:720px;border:1px solid #ddd;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,0.08);}
+
+/* id bar */
+#id-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #e8e8e8;flex-shrink:0;background:#fafafa;}
+#id-bar-label{font-size:11px;color:#999;}
+#my-id{font-size:12px;font-weight:600;color:#222;font-family:monospace;letter-spacing:0.5px;}
+#copy-btn{font-size:11px;color:#666;cursor:pointer;padding:2px 7px;border:1px solid #ddd;border-radius:6px;background:#fff;}
+#copy-btn:hover{background:#f0f0f0;}
+#conn-status{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;}
+#conn-status.connected{background:#e6f4ea;color:#2e7d32;}
+#conn-status.connecting{background:#fff8e1;color:#f57c00;}
+#conn-status.disconnected{background:#fce8e6;color:#c62828;}
+
+/* server config bar */
+#server-bar{display:flex;align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid #e8e8e8;background:#f7f7f7;flex-shrink:0;}
+#server-bar label{font-size:11px;color:#999;white-space:nowrap;}
+#server-input{flex:1;font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#222;font-family:monospace;outline:none;}
+#server-input:focus{border-color:#aaa;}
+#connect-btn{font-size:12px;padding:4px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#333;cursor:pointer;white-space:nowrap;}
+#connect-btn:hover{background:#f0f0f0;}
+
+/* tabs */
+#top-tabs{display:flex;border-bottom:1px solid #e8e8e8;flex-shrink:0;}
+.top-tab{padding:9px 18px;font-size:13px;cursor:pointer;color:#888;background:none;border:none;border-bottom:2px solid transparent;white-space:nowrap;}
+.top-tab.on{color:#111;font-weight:500;border-bottom:2px solid #111;}
+
+/* chats view */
+#view-chats{display:flex;flex:1;min-height:0;}
+#view-contacts{display:none;flex:1;flex-direction:column;min-height:0;}
+
+/* sidebar */
+#sidebar{width:230px;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;flex-shrink:0;}
+#sort-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid #e8e8e8;}
+#sort-bar label{font-size:11px;color:#999;}
+#sort-sel{font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#f7f7f7;color:#333;cursor:pointer;}
+#chat-list{flex:1;overflow-y:auto;}
+.chat-row{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f2f2f2;}
+.chat-row:hover{background:#f7f7f7;}
+.chat-row.active{background:#e8f0fe;}
+.dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;}
+.chat-row.active .dot{background:#1a73e8;}
+.item-name{font-size:13px;font-weight:500;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-sub{font-size:11px;color:#999;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.unread{margin-left:auto;background:#e8f0fe;color:#1a73e8;font-size:11px;font-weight:600;border-radius:10px;padding:1px 7px;flex-shrink:0;}
+
+/* main chat */
+#main{flex:1;display:flex;flex-direction:column;min-width:0;}
+#chat-header{padding:10px 14px;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;gap:8px;flex-shrink:0;background:#fafafa;}
+#chat-title{font-size:14px;font-weight:600;color:#222;}
+#chat-sub{font-size:11px;color:#999;font-family:monospace;}
+#messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:#fff;}
+.msg-row{display:flex;flex-direction:column;max-width:75%;}
+.msg-row.mine{align-self:flex-end;align-items:flex-end;}
+.msg-row.theirs{align-self:flex-start;align-items:flex-start;}
+.bubble{padding:8px 12px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;cursor:pointer;transition:opacity .1s;}
+.bubble:hover{opacity:.82;}
+.mine .bubble{background:#1a73e8;color:#fff;border-bottom-right-radius:4px;}
+.theirs .bubble{background:#f1f3f4;color:#222;border-bottom-left-radius:4px;border:1px solid #e8e8e8;}
+.msg-meta{font-size:10px;color:#aaa;margin-top:2px;}
+.part-note{font-size:10px;color:#bbb;align-self:center;margin:2px 0;}
+.sys-note{font-size:11px;color:#999;align-self:center;background:#f7f7f7;padding:3px 10px;border-radius:8px;margin:4px 0;}
+#inp-row{padding:10px 12px;border-top:1px solid #e8e8e8;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+#msg-inp{flex:1;font-size:13px;padding:8px 12px;border:1px solid #ddd;border-radius:18px;background:#f7f7f7;color:#222;resize:none;font-family:system-ui,sans-serif;line-height:1.4;max-height:100px;overflow-y:auto;outline:none;}
+#msg-inp:focus{border-color:#aaa;background:#fff;}
+#send-btn{padding:8px 16px;border:none;border-radius:18px;background:#1a73e8;color:#fff;cursor:pointer;font-size:13px;font-weight:500;}
+#send-btn:hover{background:#1557b0;}
+#send-btn:disabled{background:#ccc;cursor:default;}
+#chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#bbb;font-size:13px;}
+
+/* contacts view */
+#contacts-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #e8e8e8;flex-shrink:0;}
+#contacts-count{font-size:12px;color:#999;}
+#contacts-list{flex:1;overflow-y:auto;}
+.contact-card{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #f2f2f2;}
+.contact-card:hover{background:#f7f7f7;}
+.c-info{flex:1;min-width:0;}
+.c-name{font-size:14px;font-weight:500;color:#222;}
+.c-id{font-size:11px;color:#999;font-family:monospace;margin-top:2px;}
+.c-created{font-size:11px;color:#bbb;margin-top:2px;}
+.c-actions{display:flex;gap:6px;flex-shrink:0;}
+
+/* modals */
+.overlay-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:20;border-radius:12px;}
+.modal{background:#fff;border-radius:12px;border:1px solid #ddd;padding:22px;width:310px;box-shadow:0 4px 24px rgba(0,0,0,0.12);}
+.modal h3{font-size:14px;font-weight:600;color:#222;margin-bottom:14px;}
+.modal label{font-size:12px;color:#666;display:block;margin-bottom:4px;}
+.modal input{width:100%;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;background:#f7f7f7;color:#222;margin-bottom:12px;outline:none;}
+.modal input:focus{border-color:#aaa;background:#fff;}
+.modal input:disabled{color:#aaa;cursor:default;}
+.modal-meta{font-size:11px;color:#aaa;margin-bottom:14px;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btns button{font-size:13px;padding:7px 16px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#333;cursor:pointer;}
+.modal-btns button:hover{background:#f0f0f0;}
+.modal-btns button.primary{background:#1a73e8;color:#fff;border-color:#1a73e8;}
+.modal-btns button.primary:hover{background:#1557b0;}
+#err{font-size:11px;color:#d32f2f;min-height:16px;}
+.icon-btn{background:none;border:none;cursor:pointer;padding:5px;color:#aaa;border-radius:6px;display:flex;align-items:center;}
+.icon-btn:hover{color:#333;background:#f0f0f0;}
+.ts-modal{background:#fff;border-radius:12px;border:1px solid #ddd;padding:20px;width:290px;box-shadow:0 4px 24px rgba(0,0,0,0.12);}
+.ts-dir{font-size:11px;color:#999;margin-bottom:10px;}
+.ts-msg-preview{font-size:13px;color:#333;line-height:1.5;margin-bottom:14px;word-break:break-word;padding:8px 10px;background:#f7f7f7;border-radius:8px;}
+.ts-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+.ts-label{font-size:11px;color:#999;width:52px;flex-shrink:0;}
+.ts-val{font-size:13px;color:#222;font-family:monospace;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="id-bar">
+    <span id="id-bar-label">your id</span>
+    <span id="my-id"></span>
+    <button id="copy-btn">copy</button>
+    <span id="conn-status" class="disconnected">disconnected</span>
+  </div>
+  <div id="server-bar">
+    <label>relay server</label>
+    <input id="server-input" value="ws://localhost:8765" placeholder="ws://host:8765" />
+    <button id="connect-btn">connect</button>
+  </div>
+  <div id="top-tabs">
+    <button class="top-tab on" id="tab-chats" onclick="switchTab('chats')">chats</button>
+    <button class="top-tab" id="tab-contacts" onclick="switchTab('contacts')">contacts</button>
+  </div>
+
+  <div id="view-chats">
+    <div id="sidebar">
+      <div id="sort-bar">
+        <label>sort</label>
+        <select id="sort-sel" onchange="renderChatList()">
+          <option value="recent">most recent</option>
+          <option value="alpha">name A–Z</option>
+          <option value="started">date started</option>
+        </select>
+      </div>
+      <div id="chat-list"></div>
+    </div>
+    <div id="main">
+      <div id="chat-empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>select a chat to start</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-contacts">
+    <div id="contacts-toolbar">
+      <span id="contacts-count"></span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="err"></span>
+        <button onclick="openAddModal()" style="font-size:12px;padding:5px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#333;cursor:pointer;">+ add</button>
+      </div>
+    </div>
+    <div id="contacts-list"></div>
+  </div>
+</div>
+
+<script>
+const CHUNK = 160;
+const ECHO_ID = 'ECHO-BOT-000';
+const ECHO_LIMIT = 10;
+let modal = null;
+let ws = null;
+let wsConnected = false;
+
+function genId() {
+  return Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,7).toUpperCase();
+}
+function decodeIdTs(id) {
+  try { const ms = parseInt(id.split('-')[0], 36); return isNaN(ms) ? null : new Date(ms); } catch(e) { return null; }
+}
+function splitMsg(t) {
+  const p = []; for (let i = 0; i < t.length; i += CHUNK) p.push(t.slice(i, i + CHUNK)); return p;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtShort(d) { return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+function fmtFull(d) {
+  return {
+    date: d.toLocaleDateString([], {weekday:'long', year:'numeric', month:'long', day:'numeric'}),
+    time: d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}),
+    iso: d.toISOString(),
+    unix: Math.floor(d.getTime() / 1000)
+  };
+}
+
+const myId = genId();
+const S = { contacts: {}, messages: {}, active: null, tab: 'chats' };
+
+S.contacts[ECHO_ID] = { id: ECHO_ID, name: 'Echo', started: Date.now(), isEcho: true };
+S.messages[ECHO_ID] = [];
+
+document.getElementById('my-id').textContent = myId;
+document.getElementById('copy-btn').onclick = () => {
+  navigator.clipboard.writeText(myId).catch(() => {});
+  const b = document.getElementById('copy-btn');
+  b.textContent = 'copied!'; setTimeout(() => b.textContent = 'copy', 1400);
+};
+
+// ── WebSocket ──────────────────────────────────────────
+function setStatus(state) {
+  const el = document.getElementById('conn-status');
+  el.className = 'conn-status ' + state;
+  el.textContent = state;
+}
+
+function connectWS() {
+  const url = document.getElementById('server-input').value.trim();
+  if (ws) { ws.close(); ws = null; }
+  setStatus('connecting');
+  try { ws = new WebSocket(url); } catch(e) { setStatus('disconnected'); return; }
+
+  ws.onopen = () => {
+    wsConnected = true;
+    setStatus('connected');
+    ws.send(JSON.stringify({ type: 'register', id: myId }));
+  };
+
+  ws.onmessage = (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+
+    if (msg.type === 'message') {
+      const from = msg.from;
+      if (!S.contacts[from]) {
+        S.contacts[from] = { id: from, name: 'peer ' + from.slice(0,6).toLowerCase(), started: Date.now() };
+        S.messages[from] = [];
+      }
+      const t = fmtShort(new Date(msg.stamp || Date.now()));
+      S.messages[from].push({
+        text: msg.text, mine: false, time: t, stamp: msg.stamp || Date.now(),
+        read: S.active === from, part: msg.part || 1, parts: msg.parts || 1
+      });
+      if (S.active === from) renderChat();
+      renderChatList();
+    }
+
+    if (msg.type === 'error' && msg.code === 'offline') {
+      addSysNote(msg.to, `${msg.to} is offline — message not delivered`);
+    }
+  };
+
+  ws.onclose = () => { wsConnected = false; ws = null; setStatus('disconnected'); };
+  ws.onerror = () => { wsConnected = false; setStatus('disconnected'); };
+}
+
+document.getElementById('connect-btn').onclick = connectWS;
+document.getElementById('server-input').addEventListener('keydown', e => { if (e.key === 'Enter') connectWS(); });
+
+function sendWS(payload) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(payload));
+}
+
+function addSysNote(contactId, text) {
+  if (!S.messages[contactId]) return;
+  const now = Date.now();
+  S.messages[contactId].push({ text, mine: false, time: fmtShort(new Date(now)), stamp: now, part: 1, parts: 1, sys: true, read: S.active === contactId });
+  if (S.active === contactId) renderChat();
+}
+
+// ── Modals ─────────────────────────────────────────────
+function showOverlay(html) {
+  closeModal();
+  modal = document.createElement('div');
+  modal.className = 'overlay-bg';
+  modal.innerHTML = html;
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.getElementById('app').appendChild(modal);
+  modal.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+}
+function closeModal() { if (modal) { modal.remove(); modal = null; } }
+
+function openTsModal(m) {
+  const f = fmtFull(new Date(m.stamp));
+  showOverlay(`<div class="ts-modal">
+    <div class="ts-dir">${m.mine ? 'sent' : 'received'} · part ${m.part} of ${m.parts}</div>
+    <div class="ts-msg-preview">${esc(m.text)}</div>
+    <div class="ts-row"><span class="ts-label">date</span><span class="ts-val">${f.date}</span></div>
+    <div class="ts-row"><span class="ts-label">time</span><span class="ts-val">${f.time}</span></div>
+    <div class="ts-row"><span class="ts-label">ISO</span><span class="ts-val" style="font-size:11px;">${f.iso}</span></div>
+    <div class="ts-row"><span class="ts-label">unix</span><span class="ts-val">${f.unix}</span></div>
+    <div class="modal-btns" style="margin-top:14px;"><button onclick="closeModal()">close</button></div>
+  </div>`);
+}
+
+function openAddModal() {
+  showOverlay(`<div class="modal">
+    <h3>add contact</h3>
+    <label>peer ID</label>
+    <input id="m-id" placeholder="e.g. LY7K4A2-F3QXR" style="font-family:monospace;font-size:12px;" />
+    <label>nickname</label>
+    <input id="m-nick" placeholder="e.g. Alice" maxlength="30" />
+    <div class="modal-btns">
+      <button onclick="closeModal()">cancel</button>
+      <button class="primary" onclick="confirmAdd()">add</button>
+    </div>
+  </div>`);
+  setTimeout(() => document.getElementById('m-id') && document.getElementById('m-id').focus(), 50);
+}
+
+function openEditModal(id) {
+  const c = S.contacts[id];
+  const created = decodeIdTs(id);
+  const createdStr = c.isEcho ? 'system contact' : created ? created.toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}) + ' ' + created.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'unknown';
+  showOverlay(`<div class="modal">
+    <h3>${c.isEcho ? 'Echo' : 'edit contact'}</h3>
+    <label>nickname</label>
+    <input id="m-nick" value="${esc(c.name)}" maxlength="30" ${c.isEcho ? 'disabled' : ''} />
+    <div class="modal-meta">ID created: ${createdStr}${c.isEcho ? ' · system contact' : ''}</div>
+    <div class="modal-btns">
+      <button onclick="closeModal()">${c.isEcho ? 'close' : 'cancel'}</button>
+      ${!c.isEcho ? `<button class="primary" onclick="confirmEdit('${id}')">save</button>` : ''}
+    </div>
+  </div>`);
+  setTimeout(() => { const n = document.getElementById('m-nick'); if (n && !c.isEcho) { n.focus(); n.select(); } }, 50);
+}
+
+function showErr(m) { const e = document.getElementById('err'); if (!e) return; e.textContent = m; setTimeout(() => e.textContent = '', 2200); }
+
+function confirmAdd() {
+  const idEl = document.getElementById('m-id'), nickEl = document.getElementById('m-nick');
+  if (!idEl || !nickEl) return;
+  const clean = idEl.value.trim().toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+  const nick = nickEl.value.trim() || ('peer ' + clean.slice(0,6).toLowerCase());
+  if (!clean) { showErr('enter an ID'); return; }
+  if (clean === myId) { showErr("that's your own ID"); closeModal(); return; }
+  if (S.contacts[clean]) { showErr('already added'); closeModal(); return; }
+  closeModal();
+  S.contacts[clean] = { id: clean, name: nick, started: Date.now() };
+  S.messages[clean] = [];
+  renderContactsList(); renderChatList();
+}
+
+function confirmEdit(id) {
+  const nickEl = document.getElementById('m-nick');
+  if (!nickEl) return;
+  const nick = nickEl.value.trim();
+  if (nick) S.contacts[id].name = nick;
+  closeModal(); renderContactsList(); renderChatList();
+  if (S.active === id) renderChat();
+}
+
+// ── Tab switching ──────────────────────────────────────
+function switchTab(t) {
+  S.tab = t;
+  document.getElementById('tab-chats').className = 'top-tab' + (t === 'chats' ? ' on' : '');
+  document.getElementById('tab-contacts').className = 'top-tab' + (t === 'contacts' ? ' on' : '');
+  document.getElementById('view-chats').style.display = t === 'chats' ? 'flex' : 'none';
+  document.getElementById('view-contacts').style.display = t === 'contacts' ? 'flex' : 'none';
+  if (t === 'contacts') renderContactsList();
+}
+
+// ── Chat list ──────────────────────────────────────────
+function getSorted(mode) {
+  const list = Object.values(S.contacts);
+  if (mode === 'alpha') return list.sort((a,b) => a.name.localeCompare(b.name));
+  if (mode === 'started') return list.sort((a,b) => a.started - b.started);
+  return list.sort((a,b) => {
+    const la = S.messages[a.id], lb = S.messages[b.id];
+    const ta = la && la.length ? la[la.length-1].stamp : a.started;
+    const tb = lb && lb.length ? lb[lb.length-1].stamp : b.started;
+    return tb - ta;
+  });
+}
+
+function renderChatList() {
+  const area = document.getElementById('chat-list');
+  area.innerHTML = '';
+  const sel = document.getElementById('sort-sel');
+  getSorted(sel ? sel.value : 'recent').forEach(c => {
+    const unread = (S.messages[c.id] || []).filter(m => !m.mine && !m.read).length;
+    const el = document.createElement('div');
+    el.className = 'chat-row' + (S.active === c.id ? ' active' : '');
+    el.innerHTML = `<div class="dot"></div>
+      <div style="min-width:0;flex:1;">
+        <div class="item-name">${esc(c.name)}</div>
+        <div class="item-sub">${esc(c.id)}</div>
+      </div>
+      ${unread ? `<span class="unread">${unread}</span>` : ''}`;
+    el.onclick = () => selectChat(c.id);
+    area.appendChild(el);
+  });
+  const add = document.createElement('div');
+  add.style.cssText = 'padding:10px 12px;';
+  add.innerHTML = `<button onclick="openAddModal()" style="width:100%;font-size:12px;padding:6px;border:1px dashed #ddd;border-radius:8px;background:none;color:#aaa;cursor:pointer;">+ add</button>`;
+  area.appendChild(add);
+}
+
+// ── Contacts list ──────────────────────────────────────
+function renderContactsList() {
+  const list = document.getElementById('contacts-list');
+  const countEl = document.getElementById('contacts-count');
+  const all = Object.values(S.contacts).sort((a,b) => a.name.localeCompare(b.name));
+  if (countEl) countEl.textContent = `${all.length} contact${all.length !== 1 ? 's' : ''}`;
+  list.innerHTML = '';
+  all.forEach(c => {
+    const created = decodeIdTs(c.id);
+    const createdStr = c.isEcho ? 'system contact' : created ? created.toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}) : 'unknown';
+    const el = document.createElement('div');
+    el.className = 'contact-card';
+    el.innerHTML = `<div class="c-info">
+        <div class="c-name">${esc(c.name)}</div>
+        <div class="c-id">${esc(c.id)}</div>
+        <div class="c-created">created ${createdStr}</div>
+      </div>
+      <div class="c-actions">
+        ${!c.isEcho ? `<button class="icon-btn" title="edit" onclick="openEditModal('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        <button class="icon-btn" title="open chat" onclick="switchTab('chats');selectChat('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+// ── Chat ───────────────────────────────────────────────
+function selectChat(id) {
+  S.active = id;
+  switchTab('chats');
+  (S.messages[id] || []).forEach(m => m.read = true);
+  renderChatList(); renderChat();
+}
+
+function renderChat() {
+  const c = S.contacts[S.active]; if (!c) return;
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div id="chat-header">
+      <div><div id="chat-title">${esc(c.name)}</div><div id="chat-sub">${esc(c.id)}</div></div>
+      ${!c.isEcho ? `<button class="icon-btn" style="margin-left:auto;" title="edit nickname" onclick="openEditModal('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : '<div style="margin-left:auto;font-size:11px;color:#bbb;padding-right:4px;">echo bot</div>'}
+    </div>
+    <div id="messages"></div>
+    <div id="inp-row">
+      <textarea id="msg-inp" placeholder="type a message…" rows="1"></textarea>
+      <button id="send-btn">send</button>
+    </div>`;
+
+  const msgsEl = document.getElementById('messages');
+  (S.messages[S.active] || []).forEach(m => {
+    if (m.sys) {
+      const n = document.createElement('div'); n.className = 'sys-note'; n.textContent = m.text;
+      msgsEl.appendChild(n); return;
+    }
+    if (m.parts > 1) {
+      const n = document.createElement('div'); n.className = 'part-note';
+      n.textContent = `part ${m.part} of ${m.parts}`; msgsEl.appendChild(n);
+    }
+    const r = document.createElement('div');
+    r.className = 'msg-row ' + (m.mine ? 'mine' : 'theirs');
+    r.innerHTML = `<div class="bubble" title="click to inspect">${esc(m.text)}</div><div class="msg-meta">${m.time}</div>`;
+    r.querySelector('.bubble').addEventListener('click', () => openTsModal(m));
+    msgsEl.appendChild(r);
+  });
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  const inp = document.getElementById('msg-inp');
+  inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 100) + 'px'; });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
+  document.getElementById('send-btn').onclick = doSend;
+}
+
+// ── Sending ────────────────────────────────────────────
+function doSend() {
+  const inp = document.getElementById('msg-inp');
+  const text = inp && inp.value.trim();
+  if (!text || !S.active) return;
+  const chunks = splitMsg(text);
+  const now = Date.now(); const t = fmtShort(new Date(now));
+  chunks.forEach((ch, i) => {
+    S.messages[S.active].push({ text: ch, mine: true, time: t, stamp: now, read: true, part: i+1, parts: chunks.length });
+  });
+  inp.value = ''; inp.style.height = 'auto';
+  renderChat(); renderChatList();
+
+  const c = S.contacts[S.active];
+  if (c.isEcho) {
+    doEchoReply(S.active, chunks);
+  } else {
+    chunks.forEach((ch, i) => {
+      sendWS({ type: 'message', to: S.active, text: ch, part: i+1, parts: chunks.length, stamp: now });
+    });
+    if (!wsConnected) addSysNote(S.active, 'not connected to relay — message not sent');
+  }
+}
+
+function doEchoReply(id, chunks) {
+  const allowed = chunks.slice(0, ECHO_LIMIT);
+  allowed.forEach((ch, i) => {
+    setTimeout(() => {
+      const now = Date.now(); const t = fmtShort(new Date(now));
+      S.messages[id].push({ text: ch, mine: false, time: t, stamp: now, read: S.active === id, part: i+1, parts: allowed.length });
+      if (S.active === id) renderChat();
+      renderChatList();
+    }, 400 + i * 300);
+  });
+  if (chunks.length > ECHO_LIMIT) {
+    setTimeout(() => {
+      const now = Date.now(); const t = fmtShort(new Date(now));
+      S.messages[id].push({ text: `(${chunks.length - ECHO_LIMIT} part${chunks.length - ECHO_LIMIT > 1 ? 's' : ''} dropped — limit is ${ECHO_LIMIT})`, mine: false, time: t, stamp: now, read: S.active === id, part: 1, parts: 1 });
+      if (S.active === id) renderChat();
+      renderChatList();
+    }, 400 + ECHO_LIMIT * 300 + 200);
+  }
+}
+
+// ── Init ───────────────────────────────────────────────
+switchTab('chats');
+renderChatList();
+</script>
+</body>
+</html>
