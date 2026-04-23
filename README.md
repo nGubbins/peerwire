@@ -1,28 +1,26 @@
 # Peerwire
 
-A minimal P2P desktop messenger. One person runs the relay server; everyone else connects to it by URL and messages by peer ID. No accounts, no persistence — messages exist only in transit.
+A minimal P2P desktop messenger. One person hosts a relay; everyone connects to it by URL and messages by peer ID. No accounts, no persistence — messages exist only in transit.
 
-## Run the app
+## Install
 
-Requires Node.js 18+.
+Build a distributable and run the installer — no runtime required.
+
+```bash
+npm run build   # outputs to dist/
+```
+
+## Run from source
 
 ```bash
 npm install
 npm start
 ```
 
-## Run your own relay server
+## Host a relay server
+
+The app starts a local relay automatically. To message someone over the internet, deploy a public relay and share the `wss://` URL with whoever you want to reach.
 
 ```bash
-npm run relay    # default port 8765, override with PORT env var
+npm run relay   # default port 8765, override with PORT env var
 ```
-
-Deploy the relay to any Node.js host to get a public `wss://` URL. Share that URL with whoever you want to message — they enter it in the app to connect.
-
-## Build a distributable
-
-```bash
-npm run build
-```
-
-Produces platform-native installers in `dist/` (`.dmg` on Mac, `.exe` on Windows, `.AppImage` on Linux).
