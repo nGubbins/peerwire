@@ -1,11 +1,12 @@
 {
   "name": "peerwire",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "relay": "node src/p2p-messenger/server.js",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "test": "node --test"
   },
   "dependencies": {
     "ws": "^8.16.0"
@@ -16,14 +17,22 @@
   },
   "build": {
     "appId": "com.peerwire.app",
-    "productName": "Peerwire",
+    "productName": "Peerwire Chat",
     "files": [
       "main.js",
       "src/p2p-messenger/**"
     ],
-    "mac": { "target": "dmg" },
+    "mac": {
+      "target": "dmg",
+      "identity": null
+    },
     "win": { "target": "nsis" },
-    "linux": { "target": "AppImage" }
+    "linux": { "target": "AppImage" },
+    "publish": {
+      "provider": "github",
+      "owner": "nGubbins",
+      "repo": "peerwire"
+    }
   },
   "engines": {
     "node": ">=18"
