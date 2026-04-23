@@ -1,5 +1,8 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { start: startRelay } = require('./src/p2p-messenger/server');
+
+const RELAY_PORT = 8765;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -13,10 +16,13 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, 'src', 'p2p-messenger', 'index.html'));
+  win.loadFile(path.join(__dirname, 'src', 'p2p-messenger', 'index.html'), {
+    query: { relay: `ws://localhost:${RELAY_PORT}` }
+  });
 }
 
 app.whenReady().then(() => {
+  startRelay(RELAY_PORT);
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
