@@ -31,5 +31,8 @@ Thumbs.db
 htmlcov/
 .tox/
 
+# Node
+node_modules/
+
 # Logs
 *.log
