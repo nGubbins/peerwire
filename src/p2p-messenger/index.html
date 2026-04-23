@@ -513,6 +513,12 @@ function doEchoReply(id, chunks) {
 // ── Init ───────────────────────────────────────────────
 switchTab('chats');
 renderChatList();
+
+const _relayParam = new URLSearchParams(location.search).get('relay');
+if (_relayParam) {
+  document.getElementById('server-input').value = _relayParam;
+  connectWS();
+}
 </script>
 </body>
 </html>
