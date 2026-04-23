@@ -342,7 +342,7 @@ function connectWS() {
         text: msg.text, mine: false, time: t, stamp: msg.stamp || Date.now(),
         read: S.active === from, part: msg.part || 1, parts: msg.parts || 1
       });
-      if (S.active === from) renderChat();
+      if (S.active === from) renderChatKeepDraft();
       renderChatList();
     }
 
@@ -366,7 +366,7 @@ function addSysNote(contactId, text) {
   if (!S.messages[contactId]) return;
   const now = Date.now();
   S.messages[contactId].push({ text, mine: false, time: fmtShort(new Date(now)), stamp: now, part: 1, parts: 1, sys: true, read: S.active === contactId });
-  if (S.active === contactId) renderChat();
+  if (S.active === contactId) renderChatKeepDraft();
 }
 
 // ── Modals ─────────────────────────────────────────────
@@ -448,7 +448,7 @@ function confirmEdit(id) {
   const nick = nickEl.value.trim();
   if (nick) S.contacts[id].name = nick;
   closeModal(); renderContactsList(); renderChatList();
-  if (S.active === id) renderChat();
+  if (S.active === id) renderChatKeepDraft();
 }
 
 // ── Tab switching ──────────────────────────────────────
@@ -530,6 +530,20 @@ function selectChat(id) {
   renderChatList(); renderChat();
 }
 
+function renderChatKeepDraft() {
+  const inp = document.getElementById('msg-inp');
+  const draft = inp ? inp.value : '';
+  const focused = inp && document.activeElement === inp;
+  renderChat();
+  const newInp = document.getElementById('msg-inp');
+  if (newInp && draft) {
+    newInp.value = draft;
+    newInp.style.height = 'auto';
+    newInp.style.height = Math.min(newInp.scrollHeight, 100) + 'px';
+  }
+  if (newInp && focused) newInp.focus();
+}
+
 function renderChat() {
   const c = S.contacts[S.active]; if (!c) return;
   const main = document.getElementById('main');
@@ -599,7 +613,7 @@ function doEchoReply(id, chunks) {
     setTimeout(() => {
       const now = Date.now(); const t = fmtShort(new Date(now));
       S.messages[id].push({ text: ch, mine: false, time: t, stamp: now, read: S.active === id, part: i+1, parts: allowed.length });
-      if (S.active === id) renderChat();
+      if (S.active === id) renderChatKeepDraft();
       renderChatList();
     }, 400 + i * 300);
   });
@@ -607,7 +621,7 @@ function doEchoReply(id, chunks) {
     setTimeout(() => {
       const now = Date.now(); const t = fmtShort(new Date(now));
       S.messages[id].push({ text: `(${chunks.length - ECHO_LIMIT} part${chunks.length - ECHO_LIMIT > 1 ? 's' : ''} dropped — limit is ${ECHO_LIMIT})`, mine: false, time: t, stamp: now, read: S.active === id, part: 1, parts: 1 });
-      if (S.active === id) renderChat();
+      if (S.active === id) renderChatKeepDraft();
       renderChatList();
     }, 400 + ECHO_LIMIT * 300 + 200);
   }
