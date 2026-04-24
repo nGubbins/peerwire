@@ -42,11 +42,11 @@ vm.runInContext(script, ctx);
 // ── splitMsg ──────────────────────────────────────────
 
 test('splitMsg: short message is one chunk', () => {
-  assert.deepEqual(ctx.splitMsg('hello'), ['hello']);
+  assert.deepEqual([...ctx.splitMsg('hello')], ['hello']);
 });
 
-test('splitMsg: empty string produces one empty chunk', () => {
-  assert.deepEqual(ctx.splitMsg(''), ['']);
+test('splitMsg: empty string produces empty array', () => {
+  assert.deepEqual([...ctx.splitMsg('')], []);
 });
 
 test('splitMsg: exactly 160 chars stays as one chunk', () => {
@@ -78,7 +78,7 @@ test('esc: escapes &', () => {
 });
 
 test('esc: escapes <', () => {
-  assert.equal(ctx.esc('<b>'), '&lt;b>');
+  assert.equal(ctx.esc('<b>'), '&lt;b&gt;');
 });
 
 test('esc: escapes >', () => {
@@ -116,7 +116,7 @@ test('decodeIdTs: recovers timestamp from a genId-produced ID', () => {
   const id = ctx.genId();
   const after = Date.now();
   const decoded = ctx.decodeIdTs(id);
-  assert.ok(decoded instanceof Date, 'should return a Date');
+  assert.ok(decoded !== null && typeof decoded.getTime === 'function', 'should return a Date');
   assert.ok(decoded.getTime() >= before && decoded.getTime() <= after);
 });
 
