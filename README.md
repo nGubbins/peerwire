@@ -1,6 +1,6 @@
 # Peerwire
 
-A minimal P2P desktop messenger. One person hosts a relay; everyone connects to it by URL and messages by peer ID. No accounts, no persistence — messages exist only in transit.
+A minimal P2P desktop messenger. One person runs a relay server; everyone connects to it by URL and messages by peer ID. No accounts, no servers storing your data — messages exist only in transit.
 
 ## Download
 
@@ -10,34 +10,39 @@ Grab the latest installer from [Releases](https://github.com/nGubbins/peerwire/r
 - **macOS** — `.dmg`
 - **Linux** — `.AppImage`
 
-## Messaging a friend over the internet
+## How it works
 
-The app starts a relay server on your machine automatically, but it's only reachable locally by default. To connect with someone over the internet, one of you needs to expose their relay publicly using [ngrok](https://ngrok.com).
+When you open the app, it starts a relay server on your machine (`localhost:8765`) and connects to it automatically. To message someone, you both need to be connected to the **same** relay. Share your peer ID (shown at the top of the app) with whoever you want to reach.
 
-**Whoever is hosting (one-time setup):**
+## Same network (WiFi/LAN)
 
-1. Install ngrok: `winget install ngrok.ngrok` (Windows) or download from ngrok.com
-2. Open Peerwire — the relay starts on port 8765
-3. In a terminal, run: `ngrok tcp 8765`
-4. Copy the address ngrok gives you, e.g. `tcp://0.tcp.ngrok.io:12345`
-5. Change `tcp://` to `ws://` and share it: `ws://0.tcp.ngrok.io:12345`
+One person acts as the relay host. Everyone else connects to their machine:
 
-**Your friend:**
+1. The host finds their local IP: `ipconfig` (Windows) or `ifconfig` (Mac/Linux) — look for the IPv4 address, e.g. `192.168.1.42`
+2. Everyone else opens the **relay server** bar at the top, replaces `localhost` with the host's IP (`ws://192.168.1.42:8765`), and clicks **connect**
 
-1. Open Peerwire — it starts connected to their own localhost by default
-2. In the **relay server** bar at the top, clear the URL and paste the `ws://` address you shared
-3. Click **connect**
-4. Share peer IDs (shown at the top of the app) and start messaging
+The host may need to allow port 8765 through their firewall.
 
-## Messaging on the same network (no ngrok needed)
+## Over the internet
 
-If you're on the same WiFi, skip ngrok entirely:
+You need a publicly reachable relay. The cleanest option is a VPS or any server you can SSH into:
 
-1. Find your local IP: run `ipconfig` (Windows) or `ifconfig` (Mac/Linux) and look for your IPv4 address, e.g. `192.168.1.42`
-2. Share `ws://192.168.1.42:8765` with your friend
-3. Your friend pastes it into the relay server bar and clicks **connect**
+```bash
+npm install
+npm run relay   # listens on port 8765
+```
 
-You may need to allow port 8765 through your firewall.
+Share `ws://your-server-ip:8765` (or `ws://relay.yourdomain.com:8765`) as the relay URL. Friends paste it into the relay server bar and click connect.
+
+For a quick test without a server, [ngrok](https://ngrok.com) can temporarily expose your local relay:
+
+```bash
+ngrok tcp 8765
+# gives you something like tcp://0.tcp.ngrok.io:12345
+# share as ws://0.tcp.ngrok.io:12345
+```
+
+Requires a free ngrok account.
 
 ## Run from source
 
@@ -45,13 +50,3 @@ You may need to allow port 8765 through your firewall.
 npm install
 npm start
 ```
-
-## Host a standalone relay
-
-To run just the relay server (e.g. on a VPS):
-
-```bash
-npm run relay   # listens on port 8765; override with PORT=9000 npm run relay
-```
-
-Then share the `ws://your-server-ip:8765` URL with anyone who wants to connect.
