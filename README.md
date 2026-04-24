@@ -24,11 +24,20 @@ The app starts a relay server on your machine automatically, but it's only reach
 
 **Your friend:**
 
-1. Open Peerwire
-2. Change the relay URL to the `ws://` address you shared
-3. Register a peer ID and message away
+1. Open Peerwire — it starts connected to their own localhost by default
+2. In the **relay server** bar at the top, clear the URL and paste the `ws://` address you shared
+3. Click **connect**
+4. Share peer IDs (shown at the top of the app) and start messaging
 
-Your peer IDs are shown in the app — share yours with anyone you want to reach.
+## Messaging on the same network (no ngrok needed)
+
+If you're on the same WiFi, skip ngrok entirely:
+
+1. Find your local IP: run `ipconfig` (Windows) or `ifconfig` (Mac/Linux) and look for your IPv4 address, e.g. `192.168.1.42`
+2. Share `ws://192.168.1.42:8765` with your friend
+3. Your friend pastes it into the relay server bar and clicks **connect**
+
+You may need to allow port 8765 through your firewall.
 
 ## Run from source
 
