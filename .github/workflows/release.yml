@@ -51,6 +51,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: softprops/action-gh-release@v1
-        with:
-          draft: false
+      - run: gh release edit ${{ github.ref_name }} --draft=false --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
